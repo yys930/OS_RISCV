@@ -6,3 +6,6 @@ git config user.name "git-g-i-t"
 git config user.email "1579149298@qq.com"
 进行工作
 git status//查看状态
+git add .
+git commit -m "尝试连接github"
+git push
