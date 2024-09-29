@@ -1,0 +1,8 @@
+git clone https://github.com/yys930/OS_RISCV.git
+工作目录下
+git config -l
+wq退出
+git config user.name "git-g-i-t"
+git config user.email "1579149298@qq.com"
+进行工作
+git status//查看状态
