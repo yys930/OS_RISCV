@@ -44,6 +44,9 @@ void clock_init(void) {
     ticks = 0;
 
     cprintf("++ setup timer interrupts\n");
+
+    //__asm__ volatile("mret"); // 触发非法指令异常
+    //__asm__ volatile("ebreak");  // 触发断点异常
 }
 
 void clock_set_next_event(void) { sbi_set_timer(get_cycles() + timebase); }

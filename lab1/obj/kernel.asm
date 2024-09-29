@@ -213,9 +213,9 @@ void clock_init(void) {
     80200136:	1047a7f3          	csrrs	a5,sie,a5
     __asm__ __volatile__("rdtime %0" : "=r"(n));
     8020013a:	c0102573          	rdtime	a0
-    ticks = 0;
 
-    cprintf("++ setup timer interrupts\n");
+    //__asm__ volatile("mret"); // 触发非法指令异常
+    //__asm__ volatile("ebreak");  // 触发断点异常
 }
 
 void clock_set_next_event(void) { sbi_set_timer(get_cycles() + timebase); }
@@ -646,7 +646,7 @@ void exception_handler(struct trapframe *tf) {
     80200486:	04e78663          	beq	a5,a4,802004d2 <exception_handler+0x5a>
     8020048a:	02f76c63          	bltu	a4,a5,802004c2 <exception_handler+0x4a>
     8020048e:	4709                	li	a4,2
-             /* LAB1 CHALLENGE3   YOUR CODE :  */
+             /* LAB1 CHALLENGE3   YOUR CODE :2213781  */
             /*(1)输出指令异常类型（ Illegal instruction）
              *(2)输出异常指令地址
              *(3)更新 tf->epc寄存器
@@ -656,7 +656,7 @@ void exception_handler(struct trapframe *tf) {
     80200494:	b0050513          	addi	a0,a0,-1280 # 80200f90 <etext+0x588>
     switch (tf->cause) {
     80200498:	02e79163          	bne	a5,a4,802004ba <exception_handler+0x42>
-            /* LAB1 CHALLLENGE3   YOUR CODE :  */
+            /* LAB1 CHALLLENGE3   YOUR CODE :2213781  */
             /*(1)输出指令异常类型（ breakpoint）
              *(2)输出异常指令地址
              *(3)更新 tf->epc寄存器
