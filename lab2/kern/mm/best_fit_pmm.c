@@ -55,7 +55,7 @@
  *               (5.2) reset the fields of pages, such as p->ref, p->flags (PageProperty)
  *               (5.3) try to merge low addr or high addr blocks. Notice: should change some pages's p->property correctly.
  */
-free_area_t free_area;
+extern free_area_t free_area;
 
 #define free_list (free_area.free_list)
 #define nr_free (free_area.nr_free)
@@ -151,9 +151,12 @@ best_fit_free_pages(struct Page *base, size_t n) {
         p->flags = 0;
         set_page_ref(p, 0);
     }
-    /*LAB2 EXERCISE 2: YOUR CODE*/ 
+    /*LAB2 EXERCISE 2: 2210554*/ 
     // 编写代码
     // 具体来说就是设置当前页块的属性为释放的页块数、并将当前页块标记为已分配状态、最后增加nr_free的值
+    base->property = n;
+    SetPageProperty(base);
+    nr_free += n;
 
     if (list_empty(&free_list)) {
         list_add(&free_list, &(base->page_link));
@@ -173,13 +176,19 @@ best_fit_free_pages(struct Page *base, size_t n) {
     list_entry_t* le = list_prev(&(base->page_link));
     if (le != &free_list) {
         p = le2page(le, page_link);
-        /*LAB2 EXERCISE 2: YOUR CODE*/ 
-         // 编写代码
+        /*LAB2 EXERCISE 2: 2210554*/ 
+        // 编写代码
         // 1、判断前面的空闲页块是否与当前页块是连续的，如果是连续的，则将当前页块合并到前面的空闲页块中
+         if ((unsigned int)(base - p) == p->property){
         // 2、首先更新前一个空闲页块的大小，加上当前页块的大小
+         p->property += base->property;
         // 3、清除当前页块的属性标记，表示不再是空闲页块
+         ClearPageProperty(base);
         // 4、从链表中删除当前页块
+         list_del(&(base->page_link));
         // 5、将指针指向前一个空闲页块，以便继续检查合并后的连续空闲页块
+         base = p;
+        }
     }
 
     le = list_next(&(base->page_link));
