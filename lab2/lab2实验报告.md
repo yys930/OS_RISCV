@@ -160,6 +160,7 @@ first-fit 连续物理内存分配算法作为物理内存分配一个很基础�
   -可以使用NSProcessInfo类来获取设备的物理内存和可用内存信息。通过NSProcessInfo的physicalMemory属性获取设备的物理内存大小，通过availableMemory属性获取设备的可用内存大小。
   -HarmonyOS系统：
   -获取内存信息的方法与Android类似，需要使用SystemMemoryInfo和IAbilityManager类。通过调用IAbilityManager的getSystemMemoryInfo方法，并将结果存储在SystemMemoryInfo对象中，然后可以使用getTotalSysMem和getAvailSysMem方法分别获取系统内存大小和可用内存大小。
+  
   -二、调用系统命令
   -在某些操作系统中，可以通过调用系统命令来获取硬件信息，包括物理内存范围。
 
@@ -167,11 +168,13 @@ first-fit 连续物理内存分配算法作为物理内存分配一个很基础�
   -可以通过执行如cat /proc/meminfo之类的命令来查看内存信息。虽然这些命令通常提供的是内存使用情况的快照，但它们可以帮助推断出物理内存的范围。
   -MacOS系统：
   -可以使用sysctl命令结合适当的参数（如hw.memsize）来获取物理内存大小。
+  
   -三、BIOS中断调用
   -在较底层的操作系统或硬件环境中，可以通过调用BIOS中断来获取物理内存信息。
 
   -BIOS中断0x15：
   -在x86架构的计算机中，可以通过调用BIOS中断0x15的子功能（如0xE820、0xE801）来获取物理内存的详细信息。这些子功能提供了遍历主机上所有内存范围的能力，并返回每个内存范围的详细信息。
+  
   -四、硬件抽象层（HAL）
   -在现代操作系统中，硬件抽象层（HAL）负责处理与硬件的交互。操作系统可以通过HAL提供的接口来获取硬件信息，包括物理内存范围。
 
