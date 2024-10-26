@@ -121,11 +121,13 @@ best_fit_alloc_pages(size_t n) {
     // 如果找到满足需求的页面，记录该页面以及当前找到的最小连续空闲页框数量
     while ((le = list_next(le)) != &free_list) {
         struct Page *p = le2page(le, page_link);
-        if (p->property >= n) {
-            page = p;
-            break;
+        // 如果找到一个合适的块并且小于当前最小块
+        if (p->property >= n && p->property < min_size) {
+            page = p; // 更新当前找到的最佳页面
+            min_size = p->property; // 更新最小块大小
         }
     }
+
 
     if (page != NULL) {
         list_entry_t* prev = list_prev(&(page->page_link));
