@@ -75,7 +75,7 @@ best_fit_init_memmap(struct Page *base, size_t n) {
 
         /*LAB2 EXERCISE 2: YOUR CODE:2213781*/ 
         // 清空当前页框的标志和属性信息，并将页框的引用计数设置为0
-        p->flags = 0;  // 重置页的标志
+        p->flags = p->property = 0;  // 重置页的标志
         set_page_ref(p, 0); // 设置引用计数为0
 
     }
