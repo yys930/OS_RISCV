@@ -181,7 +181,7 @@ best_fit_free_pages(struct Page *base, size_t n) {
         /*LAB2 EXERCISE 2: 2210554*/ 
         // 编写代码
         // 1、判断前面的空闲页块是否与当前页块是连续的，如果是连续的，则将当前页块合并到前面的空闲页块中
-         if ((unsigned int)(base - p) == p->property){
+         if (p + p->property == base) {
         // 2、首先更新前一个空闲页块的大小，加上当前页块的大小
          p->property += base->property;
         // 3、清除当前页块的属性标记，表示不再是空闲页块
