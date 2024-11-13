@@ -7247,9 +7247,9 @@ ffffffffc0203cf4:	e935                	bnez	a0,ffffffffc0203d68 <do_pgfault+0xe2
                 goto failed;
             }
             //(3) make the page swappable.
-            swap_map_swappable(mm, addr, page, 0);
+            swap_map_swappable(mm, addr, page, 1);
 ffffffffc0203cf6:	6622                	ld	a2,8(sp)
-ffffffffc0203cf8:	4681                	li	a3,0
+ffffffffc0203cf8:	4685                	li	a3,1
 ffffffffc0203cfa:	85a2                	mv	a1,s0
 ffffffffc0203cfc:	8526                	mv	a0,s1
 ffffffffc0203cfe:	a92ff0ef          	jal	ra,ffffffffc0202f90 <swap_map_swappable>
