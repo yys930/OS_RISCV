@@ -162,6 +162,116 @@ if (swap_init_ok) {
 请在实验报告中简要说明你的设计实现过程。请回答如下问题：
  - 比较Clock页替换算法和FIFO算法的不同。
 
+**实现过程**：
+
+完成如下各个函数;
+
+- **_clock_init_mm**
+
+```c
+static int
+_clock_init_mm(struct mm_struct *mm)
+{     
+     /*LAB3 EXERCISE 4: 2210554*/ 
+     // 初始化pra_list_head为空链表
+     list_init(&pra_list_head);
+     // 初始化当前指针curr_ptr指向pra_list_head，表示当前页面替换位置为链表头
+     curr_ptr = &pra_list_head;
+     // 将mm的私有成员指针指向pra_list_head，用于后续的页面替换算法操作
+     mm->sm_priv = &pra_list_head;
+     //cprintf(" mm->sm_priv %x in fifo_init_mm\n",mm->sm_priv);
+     return 0;
+}
+```
+
+使用list_init初始化pra_list_head为空链表，然后令curr_ptr指向表头，将mm的私有成员指针sm_priv指向pra_list_head即可。
+
+- **_clock_map_swappable**
+
+```c
+static int
+_clock_map_swappable(struct mm_struct *mm, uintptr_t addr, struct Page *page, int swap_in)
+{
+    list_entry_t *entry=&(page->pra_page_link);
+ 
+    assert(entry != NULL && curr_ptr != NULL);
+    //record the page access situlation
+    /*LAB3 EXERCISE 4: 2210554*/ 
+    // link the most recent arrival page at the back of the pra_list_head qeueue.
+    // 将页面page插入到页面链表pra_list_head的末尾
+    list_entry_t *head=(list_entry_t*) mm->sm_priv;
+    list_add_before(head, entry);
+    // 将页面的visited标志置为1，表示该页面已被访问
+    page->visited = 1;
+    return 0;
+}
+```
+
+根据提示将page插入到head前面即链表的末尾，然后将visited标志置为1，表示该页面已被访问。
+
+- **_clock_swap_out_victim**
+
+```c
+static int
+_clock_swap_out_victim(struct mm_struct *mm, struct Page ** ptr_page, int in_tick)
+{
+     list_entry_t *head=(list_entry_t*) mm->sm_priv;
+         assert(head != NULL);
+     assert(in_tick==0);
+     /* Select the victim */
+     //(1)  unlink the  earliest arrival page in front of pra_list_head qeueue
+     //(2)  set the addr of addr of this page to ptr_page
+    while (1) {
+        /*LAB3 EXERCISE 4: YOUR CODE*/ 
+        // 编写代码
+        // 遍历页面链表pra_list_head，查找最早未被访问的页面
+        // 获取当前页面对应的Page结构指针
+        // 如果当前页面未被访问，则将该页面从页面链表中删除，并将该页面指针赋值给ptr_page作为换出页面
+        // 如果当前页面已被访问，则将visited标志置为0，表示该页面已被重新访问
+    }
+    return 0;
+}
+```
+
+
+回答如下问题：
+
+• **比较 Clock 页替换算法和 FIFO 算法的不同。**
+
+**答**：
+
+- 先进先出 (First In First Out, FIFO) 页替换算法：该算法总是淘汰最先进入内存的页，即选择在内存中驻
+
+	留时间最久的页予以淘汰。只需把一个应用程序在执行过程中已调入内存的页按先后次序链接成一个
+
+	队列，队列头指向内存中驻留时间最久的页，队列尾指向最近被调入内存的页。这样需要淘汰页时，从
+
+	队列头很容易查找到需要淘汰的页。FIFO 算法只是在应用程序按线性顺序访问地址空间时效果才好，
+
+	否则效率不高。**因为那些常被访问的页，往往在内存中也停留得最久**，结果它们因变“老”而不得不
+
+	被置换出去。FIFO 算法的另一个缺点是，它有一种**异常现象（Belady 现象）**，即在增加放置页的物理页
+
+	帧的情况下，反而使页访问异常次数增多。
+
+- 时钟（Clock）页替换算法：是 LRU 算法的一种近似实现。时钟页替换算法把各个页面组织成环形链表
+
+	的形式，类似于一个钟的表面。然后把一个指针（简称当前指针）指向最老的那个页面，即最先进来
+
+	的那个页面。另外，时钟算法需要在页表项（PTE）中设置了一位访问位来表示此页表项对应的页当前
+
+	**是否被访问过**。当该页被访问时，CPU 中的 MMU 硬件将把访问位置“1”。当操作系统需要淘汰页时，
+
+	对当前指针指向的页所对应的页表项进行查询，如果访问位为“0”，则淘汰该页，如果该页被写过，则
+
+	还要把它换出到硬盘上；如果访问位为“1”，则将该页表项的此位置“0”，继续访问下一个页。该算法
+
+	近似地体现了 LRU 的思想，且易于实现，开销少，需要硬件支持来设置访问位。时钟页替换算法在本
+
+	质上与 FIFO 算法是类似的，不同之处是在时钟页替换算法中跳过了访问位为 1 的页。
+
+*总而言之，CLOCK算法考虑了页表项表示的页是否被访问过，而FIFO不考虑这点。*
+
 ### 练习5：阅读代码和实现手册，理解页表映射方式相关知识（思考题）
 如果我们采用”一个大页“ 的页表映射方式，相比分级页表，有什么好处、优势，有什么坏处、风险？
 
