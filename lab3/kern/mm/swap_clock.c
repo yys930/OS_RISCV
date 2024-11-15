@@ -76,7 +76,7 @@ _clock_swap_out_victim(struct mm_struct *mm, struct Page ** ptr_page, int in_tic
      //(1)  unlink the  earliest arrival page in front of pra_list_head qeueue
      //(2)  set the addr of addr of this page to ptr_page
     while (1) {
-        /*LAB3 EXERCISE 4: YOUR CODE：2213781*/ 
+        /*LAB3 EXERCISE 4: YOUR CODE：2212850*/ 
         // 编写代码
         // 遍历页面链表pra_list_head，查找最早未被访问的页面
         // 获取当前页面对应的Page结构指针
