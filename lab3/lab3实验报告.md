@@ -302,7 +302,7 @@ _clock_swap_out_victim(struct mm_struct *mm, struct Page ** ptr_page, int in_tic
     return 0;
 }
 ```
-
+遍历页面链表pra_list_head，查找最早未被访问的页面并获取当前页面对应的Page结构指针，如果当前页面未被访问，则将该页面从页面链表中删除，并将该页面指针赋值给ptr_page作为换出页面，如果当前页面已被访问，则将visited标志置为0，表示该页面已被重新访问。
 
 回答如下问题：
 
