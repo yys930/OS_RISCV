@@ -285,6 +285,7 @@ do_fork(uint32_t clone_flags, uintptr_t stack, struct trapframe *tf) {
         goto fork_out;
     }
     ret = -E_NO_MEM;
+    //LAB4:EXERCISE2 YOUR CODE:2212850
     // 1. 调用 alloc_proc 分配一个新的进程结构
     proc = alloc_proc();
     if (proc == NULL) {
