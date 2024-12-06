@@ -176,7 +176,73 @@ struct trapframe {
 - 返回新进程号
 
 请在实验报告中简要说明你的设计实现过程。请回答如下问题：
-- 请说明ucore是否做到给每个新fork的线程一个唯一的id？请说明你的分析和理由。
+
+- 填写的do_fork函数代码如下：
+  // 1. 调用 alloc_proc 分配一个新的进程结构
+    proc = alloc_proc();
+    if (proc == NULL) {
+        goto bad_fork_cleanup_proc;
+    }
+    proc->parent = current;
+    // 2. 调用 setup_kstack 为子进程分配内核栈
+    if (setup_kstack(proc) != 0) {
+        goto bad_fork_cleanup_proc;
+    }
+
+    // 3. 判断是否需要复制内存管理信息
+    
+        
+    if (copy_mm(clone_flags, proc) != 0) {
+        goto bad_fork_cleanup_kstack;
+    }
+    
+
+    // 4. 调用 copy_thread 设置 tf 和 context
+    copy_thread(proc, stack, tf);
+    
+    // 5. 将新进程加入哈希链和进程列表
+    
+    proc->pid = get_pid();
+    hash_proc(proc);
+    list_add(&proc_list, &proc->list_link);
+    nr_process++;
+    // 6. 调用 wakeup_proc 将新进程置为可调度
+    wakeup_proc(proc);
+
+    // 7. 设置返回值为子进程的 PID
+    ret = proc->pid;
+
+  - 请说明ucore是否做到给每个新fork的线程一个唯一的id？请说明你的分析和理由。
+  - 可以，uCore通过`get_pid`函数和`do_fork`函数中的相关逻辑，可以做到给每个新`fork`的线程（或进程）分配一个唯一的ID。
+#### PID分配流程
+ 
+1. **调用`get_pid`函数**：
+   - 在`do_fork`函数中，新创建的进程通过调用`get_pid`函数来获取一个PID。
+ 
+2. **`get_pid`函数逻辑**：
+   - `get_pid`函数维护了两个静态变量：`last_pid`和`next_safe`。
+   - `last_pid`用于跟踪上一个分配的PID，每次调用`get_pid`时都会递增。
+   - 如果`last_pid`达到`MAX_PID`，则会回绕到1。
+   - `next_safe`用于优化搜索，记录下一个可能的安全PID值。
+ 
+3. **唯一性检查**：
+   - `get_pid`函数会遍历进程列表`proc_list`，检查`last_pid`是否与现有进程的PID冲突。
+   - 如果冲突，`last_pid`会继续递增，并重新检查，直到找到一个未使用的PID。
+   - 通过这种机制，确保分配的PID是唯一的。
+ 
+4. **PID分配与进程创建**：
+   - 一旦找到可用的PID，该PID会被赋值给新进程的`proc->pid`。
+   - 新进程随后被添加到进程列表`proc_list`中，成为系统的一部分。
+ 
+#### 唯一性保证
+ 
+- **静态变量维护**：`last_pid`和`next_safe`作为静态变量，在`get_pid`函数多次调用之间保持状态，确保PID分配的连续性和唯一性。
+- **冲突检测**：通过遍历进程列表并检查PID冲突，`get_pid`函数能够确保分配的PID不与现有进程的PID重复。
+- **资源回收**：如果在进程创建过程中发生错误，`do_fork`函数会跳转到相应的错误处理代码块，释放已分配的资源（包括进程结构和内核栈）。由于`last_pid`已经递增，因此失败的PID不会被重新使用。
+ 
+
+
+  
 
 ### 练习3：编写proc_run 函数（需要编码）
 proc_run用于将指定的进程切换到CPU上运行。它的大致执行步骤包括：
