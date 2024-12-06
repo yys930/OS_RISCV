@@ -178,43 +178,74 @@ struct trapframe {
 请在实验报告中简要说明你的设计实现过程。请回答如下问题：
 
 - 填写的do_fork函数代码如下：
-  // 1. 调用 alloc_proc 分配一个新的进程结构
-    proc = alloc_proc();
-    if (proc == NULL) {
-        goto bad_fork_cleanup_proc;
-    }
-    proc->parent = current;
-    // 2. 调用 setup_kstack 为子进程分配内核栈
-    if (setup_kstack(proc) != 0) {
-        goto bad_fork_cleanup_proc;
-    }
+#### 1. 分配新的进程结构
+ 
+```c
+proc = alloc_proc();
+if (proc == NULL) {
+    goto bad_fork_cleanup_proc;
+}
+proc->parent = current;
+```
+- alloc_proc()：这是一个函数调用，用于从内核的内存池中分配一个新的进程控制块（Process Control Block, PCB）。PCB是操作系统用来存储进程状态、寄存器内容、内存管理信息等的数据结构。
 
-    // 3. 判断是否需要复制内存管理信息
-    
-        
-    if (copy_mm(clone_flags, proc) != 0) {
-        goto bad_fork_cleanup_kstack;
-    }
-    
+- 错误处理：如果alloc_proc()返回NULL，表示内存不足，无法分配新的PCB。此时，代码会跳转到bad_fork_cleanup_proc标签进行错误处理，通常这意味着释放已分配的资源并退出函数。
 
-    // 4. 调用 copy_thread 设置 tf 和 context
-    copy_thread(proc, stack, tf);
-    
-    // 5. 将新进程加入哈希链和进程列表
-    
-    proc->pid = get_pid();
-    hash_proc(proc);
-    list_add(&proc_list, &proc->list_link);
-    nr_process++;
-    // 6. 调用 wakeup_proc 将新进程置为可调度
-    wakeup_proc(proc);
+- 设置父进程：proc->parent = current;将新进程的父进程设置为当前进程（current）。
 
-    // 7. 设置返回值为子进程的 PID
-    ret = proc->pid;
+#### 2. 为子进程分配内核栈
+```c
+if (setup_kstack(proc) != 0) {
+    goto bad_fork_cleanup_proc;
+}
+```
+- setup_kstack(proc)：这是一个函数调用，用于为子进程分配一个独立的内核栈。内核栈是进程在内核模式下执行时所使用的栈空间。
+- 错误处理：如果setup_kstack()返回非0值，表示分配内核栈失败。此时，代码会跳转到bad_fork_cleanup_proc标签进行错误处理。
 
-  - 请说明ucore是否做到给每个新fork的线程一个唯一的id？请说明你的分析和理由。
-  - 可以，uCore通过`get_pid`函数和`do_fork`函数中的相关逻辑，可以做到给每个新`fork`的线程（或进程）分配一个唯一的ID。
-#### PID分配流程
+#### 3. 判断并复制内存管理信息
+```c
+if (copy_mm(clone_flags, proc) != 0) {
+    goto bad_fork_cleanup_kstack;
+}
+```
+- copy_mm(clone_flags, proc)：这是一个函数调用，用于根据clone_flags标志判断是否需要复制当前进程的内存管理信息到子进程中。clone_flags决定了是共享内存空间还是复制一份新的内存空间。
+- 错误处理：如果copy_mm()返回非0值，表示复制内存管理信息失败。此时，代码会跳转到bad_fork_cleanup_kstack标签进行错误处理，通常会释放已分配的内核栈。
+
+#### 4. 设置进程的执行上下文
+```c
+copy_thread(proc, stack, tf);
+```
+- copy_thread(proc, stack, tf)：这是一个函数调用，用于设置子进程的执行上下文，包括初始化寄存器、栈指针等，以便子进程能够正确地从指定位置开始执行。stack是子进程的用户栈顶地址，tf是中断帧或陷阱帧，包含了进程被创建时的CPU状态。
+
+  
+#### 5. 将新进程加入全局进程链表
+```c
+proc->pid = get_pid();
+hash_proc(proc);
+list_add(&proc_list, &proc->list_link);
+nr_process++;
+```
+- get_pid()：这是一个函数调用，用于获取一个新的进程ID（PID）。
+- hash_proc(proc)：将新进程加入到哈希链表中，以便快速查找。
+- list_add(&proc_list, &proc->list_link)：将新进程加入到全局进程链表proc_list中。
+- nr_process++：全局变量nr_process加1，表示系统中的进程数增加了一个。
+
+#### 6. 将新进程置为可调度状态
+```c
+wakeup_proc(proc);
+```
+- wakeup_proc(proc)：这是一个函数调用，用于将新进程从睡眠状态唤醒，并将其置为可调度状态，以便调度器能够选择它进行执行。
+
+#### 7. 设置返回值为子进程的PID
+```c
+ret = proc->pid;
+```
+- 将子进程的PID赋值给ret变量，作为函数的返回值。这样，调用者就可以知道新创建的进程的PID了。
+ 
+
+#### 请说明ucore是否做到给每个新fork的线程一个唯一的id？请说明你的分析和理由。
+可以，uCore通过`get_pid`函数和`do_fork`函数中的相关逻辑，可以做到给每个新`fork`的线程（或进程）分配一个唯一的ID。
+##### PID分配流程
  
 1. **调用`get_pid`函数**：
    - 在`do_fork`函数中，新创建的进程通过调用`get_pid`函数来获取一个PID。
@@ -234,7 +265,7 @@ struct trapframe {
    - 一旦找到可用的PID，该PID会被赋值给新进程的`proc->pid`。
    - 新进程随后被添加到进程列表`proc_list`中，成为系统的一部分。
  
-#### 唯一性保证
+##### 唯一性保证
  
 - **静态变量维护**：`last_pid`和`next_safe`作为静态变量，在`get_pid`函数多次调用之间保持状态，确保PID分配的连续性和唯一性。
 - **冲突检测**：通过遍历进程列表并检查PID冲突，`get_pid`函数能够确保分配的PID不与现有进程的PID重复。
