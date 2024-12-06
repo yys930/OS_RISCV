@@ -253,8 +253,52 @@ proc_run用于将指定的进程切换到CPU上运行。它的大致执行步骤
 - 实现上下文切换。/kern/process中已经预先编写好了switch.S，其中定义了switch_to()函数。可实现两个进程的context切换。
 - 允许中断。
 
+#### 编码
+
+```c++
+void
+proc_run(struct proc_struct *proc) {
+    if (proc != current) {
+        // LAB4:EXERCISE3
+        /*
+        * Some Useful MACROs, Functions and DEFINEs, you can use them in below implementation.
+        * MACROs or Functions:
+        *   local_intr_save():        Disable interrupts
+        *   local_intr_restore():     Enable Interrupts
+        *   lcr3():                   Modify the value of CR3 register
+        *   switch_to():              Context switching between two processes
+        */
+       bool intr_flag;
+       struct proc_struct *prev = current, *next = proc;
+       local_intr_save(intr_flag);
+       {
+          current = proc;
+          lcr3(next->cr3);
+          switch_to(&(prev->context), &(next->context));
+       }
+       local_intr_restore(intr_flag);
+    }
+}
+```
+
+此函数**基本思路**是：
+
+- 让 current指向 next内核线程initproc；
+- 设置 CR3 寄存器的值为 next 内核线程 initproc 的页目录表起始地址 next->cr3，这实际上是完成进程间的页表切换；
+- 由 switch_to函数完成具体的两个线程的执行现场切换，即切换各个寄存器，当 switch_to 函数执行完“ret”指令后，就切换到initproc执行了。
+
+在这个过程中使用了`local_intr_save()`和`local_intr_restore()`，作用分别是屏蔽中断和打开中断，以免进程切换时其他进程再进行调度，保护进程切换不会被中断。
+
+
 请回答如下问题：
 - 在本实验的执行过程中，创建且运行了几个内核线程？
+
+#### 问题回答
+
+在本实验中，创建且运行了2两个内核线程：
+
+- idleproc：第一个内核进程，完成内核中各个子系统的初始化，之后立即调度，执行其他进程。
+- initproc：用于完成实验的功能而调度的内核进程。
 
 完成代码编写后，编译并运行代码：`make qemu`
 如果可以得到如 附录A所示的显示内容（仅供参考，不是标准答案输出），则基本正确。
