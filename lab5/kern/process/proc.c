@@ -421,7 +421,7 @@ do_fork(uint32_t clone_flags, uintptr_t stack, struct trapframe *tf) {
     //    6. call wakeup_proc to make the new child process RUNNABLE
     //    7. set ret vaule using child proc's pid
 
-    //LAB5 YOUR CODE : (update LAB4 steps)
+    //LAB5 YOUR CODE : 2212850(update LAB4 steps)
     //TIPS: you should modify your written code in lab4(step1 and step5), not add more code.
    /* Some Functions
     *    set_links:  set the relation links of process.  ALSO SEE: remove_links:  lean the relation links of process 
@@ -429,7 +429,37 @@ do_fork(uint32_t clone_flags, uintptr_t stack, struct trapframe *tf) {
     *    update step 1: set child proc's parent to current process, make sure current process's wait_state is 0
     *    update step 5: insert proc_struct into hash_list && proc_list, set the relation links of process
     */
+   proc = alloc_proc();
+    if (proc == NULL) {
+        goto bad_fork_cleanup_proc;
+    }
+    proc->parent = current;
+    // 2. 调用 setup_kstack 为子进程分配内核栈
+    if (setup_kstack(proc) != 0) {
+        goto bad_fork_cleanup_proc;
+    }
+
+    // 3. 判断是否需要复制内存管理信息
     
+        
+    if (copy_mm(clone_flags, proc) != 0) {
+        goto bad_fork_cleanup_kstack;
+    }
+    
+
+    // 4. 调用 copy_thread 设置 tf 和 context
+    copy_thread(proc, stack, tf);
+    
+    // 5. 将新进程加入哈希链和进程列表
+    
+    proc->pid = get_pid();
+    hash_proc(proc);
+    set_links(proc);
+    // 6. 调用 wakeup_proc 将新进程置为可调度
+    wakeup_proc(proc);
+
+    // 7. 设置返回值为子进程的 PID
+    ret = proc->pid;
  
 fork_out:
     return ret;
@@ -440,6 +470,7 @@ bad_fork_cleanup_proc:
     kfree(proc);
     goto fork_out;
 }
+
 
 // do_exit - called by sys_exit
 //   1. call exit_mmap & put_pgdir & mm_destroy to free the almost all memory space of process
