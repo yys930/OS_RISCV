@@ -87,7 +87,7 @@ static struct proc_struct *
 alloc_proc(void) {
     struct proc_struct *proc = kmalloc(sizeof(struct proc_struct));
     if (proc != NULL) {
-    //LAB4:EXERCISE1 YOUR CODE
+    //LAB4:EXERCISE1 YOUR CODE：2213781
     /*
      * below fields in proc_struct need to be initialized
      *       enum proc_state state;                      // Process state
@@ -103,13 +103,30 @@ alloc_proc(void) {
      *       uint32_t flags;                             // Process flag
      *       char name[PROC_NAME_LEN + 1];               // Process name
      */
+    proc->state = PROC_UNINIT;               // 进程状态初始化为PROC_UNINIT
+    proc->pid = -1;                          // PID初始化为-1
+    proc->runs = 0;                          // 初始运行次数为0
+    proc->kstack = 0;                        // 内核栈地址初始化为0
+    proc->need_resched = 0;                  // 默认不需要调度
+    proc->parent = NULL;                     // 父进程初始化为NULL
+    proc->mm = NULL;                         // 内存管理结构初始化为NULL
+    memset(&proc->context, 0, sizeof(struct context));  // 清空上下文
+    proc->tf = NULL;                         // Trap frame初始化为NULL
+    proc->cr3 = boot_cr3;                           // 页目录基地址初始化为0
+    proc->flags = 0;                         // 标志初始化为0
+    memset(proc->name, 0, sizeof(proc->name)); // 进程名清空
 
-     //LAB5 YOUR CODE : (update LAB4 steps)
+     //LAB5 YOUR CODE : 2213781(update LAB4 steps)
      /*
      * below fields(add in LAB5) in proc_struct need to be initialized  
      *       uint32_t wait_state;                        // waiting state
      *       struct proc_struct *cptr, *yptr, *optr;     // relations between processes
      */
+    proc->wait_state = 0;
+    proc->cptr = NULL;
+    proc->yptr = NULL;
+    proc->optr = NULL;
+
     }
     return proc;
 }
@@ -197,7 +214,7 @@ get_pid(void) {
 void
 proc_run(struct proc_struct *proc) {
     if (proc != current) {
-        // LAB4:EXERCISE3 YOUR CODE
+        // LAB4:EXERCISE3 2210554
         /*
         * Some Useful MACROs, Functions and DEFINEs, you can use them in below implementation.
         * MACROs or Functions:
@@ -206,6 +223,15 @@ proc_run(struct proc_struct *proc) {
         *   lcr3():                   Modify the value of CR3 register
         *   switch_to():              Context switching between two processes
         */
+        bool intr_flag;
+       struct proc_struct *prev = current, *next = proc;
+       local_intr_save(intr_flag);
+       {
+            current = proc;
+            lcr3(next->cr3);
+            switch_to(&(prev->context), &(next->context));
+       }
+       local_intr_restore(intr_flag);
 
     }
 }
@@ -403,6 +429,7 @@ do_fork(uint32_t clone_flags, uintptr_t stack, struct trapframe *tf) {
     *    update step 1: set child proc's parent to current process, make sure current process's wait_state is 0
     *    update step 5: insert proc_struct into hash_list && proc_list, set the relation links of process
     */
+    
  
 fork_out:
     return ret;
@@ -595,7 +622,7 @@ load_icode(unsigned char *binary, size_t size) {
     // Keep sstatus
     uintptr_t sstatus = tf->status;
     memset(tf, 0, sizeof(struct trapframe));
-    /* LAB5:EXERCISE1 YOUR CODE
+    /* LAB5:EXERCISE1 YOUR CODE: 2213781
      * should set tf->gpr.sp, tf->epc, tf->status
      * NOTICE: If we set trapframe correctly, then the user level process can return to USER MODE from kernel. So
      *          tf->gpr.sp should be user stack top (the value of sp)
@@ -603,6 +630,9 @@ load_icode(unsigned char *binary, size_t size) {
      *          tf->status should be appropriate for user program (the value of sstatus)
      *          hint: check meaning of SPP, SPIE in SSTATUS, use them by SSTATUS_SPP, SSTATUS_SPIE(defined in risv.h)
      */
+    tf->gpr.sp = USTACKTOP;
+    tf->epc = elf->e_entry;
+    tf->status = (read_csr(sstatus) & ~SSTATUS_SPP) | SSTATUS_SPIE;
 
 
     ret = 0;
